@@ -2,32 +2,29 @@
 import glob
 
 import cv2
-import numpy as np
 
 import json
 import logging
 import logging.config
 
+from rich.logging import RichHandler
+from rich.console import Console
+
 CONFIG = '''
 {
     "version": 1,
     "disable_existing_loggers": false,
-    "formatters": {
-        "simple_format": {
-            "format": "%(asctime)s [%(levelname)10s] %(message)s"
-        }
-    },
     "handlers": {
-        "terminal": {
-            "class": "logging.StreamHandler",
-            "formatter": "simple_format",
-            "level": "DEBUG"
+        "rich": {
+            "class": "rich.logging.RichHandler",
+            "level": "DEBUG",
+            "rich_tracebacks": "True"
         }
     },
     "root": {
         "level": "INFO",
         "handlers": [
-            "terminal"
+            "rich"
         ]
     }
 }
@@ -38,88 +35,89 @@ logger.setLevel(logging.DEBUG)
 
 
 # PARAM
-ACC_THR_E = 0.92     # 「エ」の一致率しきい値
-ACC_THR_Q = 0.88     # 「問」の一致率しきい値
+
+PREVIEW_ZOOM = 0.5                          # プレビュー表示倍率
+RECIPROCAL_PREVIEW_ZOOM = 1 / PREVIEW_ZOOM  # 逆数
+
+WINDOW_NAME = "sheet"
+PREVIEW_WINDOW_NAME = "Pre-sheet"
 
 
 
-def get_location(image, templ, acc_thr):
-    """imageからtemplを探す
-    一致率がacc_thrを超えた座標をすべて返す"""
-    result = cv2.matchTemplate(image, templ, cv2.TM_CCOEFF_NORMED)
-    loc = np.where(result > acc_thr)
-    loc_list = list(zip(*loc[::-1]))
-    logger.debug(f"loc_list = {loc_list}")
-    return loc_list
+x0 = y0 = x1 = y1 = 0
+drag_flg = False
+def mouse_coor(event, x, y, flags, param):
+    global x0, y0, x1, y1, drag_flg, sheet
+    if event == cv2.EVENT_LBUTTONDOWN:
+        x0 = int(x * RECIPROCAL_PREVIEW_ZOOM)
+        y0 = int(y * RECIPROCAL_PREVIEW_ZOOM)
+        logger.debug(f"(x0, y0) = ({x}, {y})")
+        drag_flg = True
 
-def load_question_sheets():
-    files = glob.glob("./image/*.jpg")
-    for file in files:
-        sheet = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
-        logger.info(f"{file}")
-        yield sheet
+    elif event == cv2.EVENT_LBUTTONUP:
+        x1 = int(x * RECIPROCAL_PREVIEW_ZOOM)
+        y1 = int(y * RECIPROCAL_PREVIEW_ZOOM)
+        logger.debug(f"(x1, y1) = ({x}, {y})")
+        drag_flg = False
 
+        pre_sheet = cv2.copyTo(sheet, None)
+        cv2.imshow(PREVIEW_WINDOW_NAME, cv2.resize(pre_sheet[y0:y1, x0:x1], None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM))
 
-# 選択肢エを読み込む
-word_e = cv2.imread("./resrc/e.jpg", cv2.IMREAD_GRAYSCALE)
-# 問を読み込む
-word_q = cv2.imread("./resrc/q.jpg", cv2.IMREAD_GRAYSCALE)
-
-
-# 問題用紙読み込み
-question_number = 0
-for sheet in load_question_sheets():
-    # エの座標を取得
-    loc_e_list = get_location(sheet, word_e, ACC_THR_E)
-    for loc_e in loc_e_list:
-        w,h = word_e.shape[::-1]
-        cv2.rectangle(sheet, loc_e, (loc_e[0] + w, loc_e[1] + h), (0, 255, 255), 2)
-    cv2.imshow("e", cv2.resize(sheet, None, fx=0.5, fy=0.5))
-    cv2.waitKey(0)
-
-    # 問の座標を取得
-    loc_q_list = get_location(sheet, word_q, ACC_THR_Q)
-    for loc_q in loc_q_list:
-        w,h = word_q.shape[::-1]
-        cv2.rectangle(sheet, loc_q, (loc_q[0] + w, loc_q[1] + h), (0, 255, 255), 2)
-    cv2.imshow("q", cv2.resize(sheet, None, fx=0.5, fy=0.5))
-    cv2.waitKey(0)
+    if drag_flg:
+        x1 = int(x * RECIPROCAL_PREVIEW_ZOOM)
+        y1 = int(y * RECIPROCAL_PREVIEW_ZOOM)
+        pre_sheet = cv2.copyTo(sheet, None)
+        cv2.rectangle(pre_sheet, (x0, y0), (x1, y1), (0, 255, 255), 2)
+        cv2.imshow(WINDOW_NAME, cv2.resize(pre_sheet, None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM))
 
 
-    # 一つも見つけられなかった
-    if len(loc_q_list) == 0:
-        logger.error("len(loc_q_list) == 0")
-        continue
+# 問題冊子読み込み
+page_index = 0
+files = glob.glob("./image/*.jpg")
+PAGE_MAX = len(files)
+sheet = cv2.imread(files[page_index], cv2.IMREAD_GRAYSCALE)
 
-    # 検出した問題数と選択肢の数が一致しない
-    # if len(loc_q_list) != len(loc_e_list):
-    #     logger.error("question({0}) != choice({1})".format(len(loc_q_list), len(loc_e_list)))
-    #     continue
-
-    for i in range(len(loc_q_list)):
-        loc_0 = loc_q_list[i]
-        loc_1 = loc_e_list[i]
-
-        x0 = loc_0[0] - 20
-        y0 = loc_0[1] - 10
-
-        x1 = 1300
-        y1 = loc_1[1] + 80
+# ウインドウ準備
+cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
 
 
-        if (x0 > x1) or (y0 > y1):
-            logger.error(f"invalid detection")
-            break
+QUESTION_MAX = 80
+question_index = 0
+while True:
+    logger.info("======================================================")
+    logger.info(f"page index : {page_index}")
+    logger.info(f"question index : {question_index}")
+    logger.info("page     prev: q, next: e")
+    logger.info("question prev: a, next: d")
+    logger.info("quit: c")
+    logger.info("======================================================")
 
-        logger.debug(f"(x0, y0) = ({x0}, {y0})")
-        logger.debug(f"(x1, y1) = ({x1}, {y1})")
+    # 問題用紙表示
+    sheet = cv2.imread(files[page_index], cv2.IMREAD_GRAYSCALE)
+    cv2.imshow(WINDOW_NAME, cv2.resize(sheet, None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM))
 
-        cv2.rectangle(sheet, (x0, y0), (x1, y1), (0, 0, 255), 2)
-        cv2.imshow("tmp", cv2.resize(sheet, None, fx=0.5, fy=0.5))
-        cv2.imshow("cut", sheet[y0:y1, x0:x1])
-        cv2.waitKey(0)
+    # マウスイベントのコールバックセット
+    cv2.setMouseCallback(WINDOW_NAME, mouse_coor)
+    
+    # ページ操作, 問題数操作
+    key = cv2.waitKey(0)
+    if(chr(key) == 'q'):
+        page_index -= 1
+        if page_index < 0:
+            page_index = 0
+    elif(chr(key) == 'e'):
+        page_index += 1
+        if page_index >= PAGE_MAX:
+            page_index = PAGE_MAX - 1
+    elif(chr(key) == 'a'):
+        question_index -= 1
+        if question_index < 0:
+            question_index = 0
+    elif(chr(key) == 'd'):
+        question_index += 1
+        if question_index >= QUESTION_MAX:
+            question_index = QUESTION_MAX - 1
+    elif(chr(key) == 'c'):
+        break
 
-        save_path = "./dst/result_{question_number}.jpg"
-        logger.info(f"save {save_path}")
-        cv2.imwrite(f"./dst/result_{i}.jpg", sheet[y0:y1, x0:x1])
-        question_number += 1
+cv2.destroyAllWindows()
