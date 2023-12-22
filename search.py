@@ -47,7 +47,7 @@ PREVIEW_WINDOW_NAME = "Pre-sheet"
 x0 = y0 = x1 = y1 = 0
 drag_flg = False
 def mouse_coor(event, x, y, flags, param):
-    global x0, y0, x1, y1, drag_flg, sheet
+    global x0, y0, x1, y1, drag_flg, sheet, question_index
     if event == cv2.EVENT_LBUTTONDOWN:
         x0 = int(x * RECIPROCAL_PREVIEW_ZOOM)
         y0 = int(y * RECIPROCAL_PREVIEW_ZOOM)
@@ -61,7 +61,9 @@ def mouse_coor(event, x, y, flags, param):
         drag_flg = False
 
         pre_sheet = cv2.copyTo(sheet, None)
-        cv2.imshow(PREVIEW_WINDOW_NAME, cv2.resize(pre_sheet[y0:y1, x0:x1], None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM))
+        pre_sheet_resized = cv2.resize(pre_sheet[y0:y1, x0:x1], None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM)
+        cv2.imwrite(f"./dst/question_{question_index}.jpg", pre_sheet[y0:y1, x0:x1])
+        cv2.imshow(PREVIEW_WINDOW_NAME, pre_sheet_resized)
 
     if drag_flg:
         x1 = int(x * RECIPROCAL_PREVIEW_ZOOM)
@@ -79,10 +81,14 @@ sheet = cv2.imread(files[page_index], cv2.IMREAD_GRAYSCALE)
 
 # ウインドウ準備
 cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+cv2.namedWindow(PREVIEW_WINDOW_NAME, cv2.WINDOW_NORMAL)
+
+# マウスイベントのコールバックセット
+cv2.setMouseCallback(WINDOW_NAME, mouse_coor)
 
 
 QUESTION_MAX = 80
-question_index = 0
+question_index = 1
 while True:
     logger.info("======================================================")
     logger.info(f"page index : {page_index}")
@@ -94,10 +100,18 @@ while True:
 
     # 問題用紙表示
     sheet = cv2.imread(files[page_index], cv2.IMREAD_GRAYSCALE)
+
+    # OpenCVの文字描画とサイズ指定 https://zenn.dev/waruby/articles/a6d831cbe7f8af
+    cv2.putText(sheet, f"SELECT Q.{question_index}", (10, 50), cv2.FONT_HERSHEY_DUPLEX, 1.0, (0, 0, 0))
     cv2.imshow(WINDOW_NAME, cv2.resize(sheet, None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM))
 
-    # マウスイベントのコールバックセット
-    cv2.setMouseCallback(WINDOW_NAME, mouse_coor)
+    # 問題切り抜き表示
+    pre_sheet = cv2.imread(f"./dst/question_{question_index}.jpg", cv2.IMREAD_GRAYSCALE)
+    if pre_sheet is not None:
+        cv2.destroyWindow(PREVIEW_WINDOW_NAME)
+        cv2.imshow(PREVIEW_WINDOW_NAME, cv2.resize(pre_sheet, None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM))
+
+    
     
     # ページ操作, 問題数操作
     key = cv2.waitKey(0)
@@ -111,12 +125,12 @@ while True:
             page_index = PAGE_MAX - 1
     elif(chr(key) == 'a'):
         question_index -= 1
-        if question_index < 0:
-            question_index = 0
+        if question_index < 1:
+            question_index = 1
     elif(chr(key) == 'd'):
         question_index += 1
         if question_index >= QUESTION_MAX:
-            question_index = QUESTION_MAX - 1
+            question_index = QUESTION_MAX
     elif(chr(key) == 'c'):
         break
 
