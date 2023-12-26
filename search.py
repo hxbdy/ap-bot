@@ -10,6 +10,8 @@ import logging.config
 from rich.logging import RichHandler
 from rich.console import Console
 
+import info
+
 CONFIG = '''
 {
     "version": 1,
@@ -62,7 +64,7 @@ def mouse_coor(event, x, y, flags, param):
 
         pre_sheet = cv2.copyTo(sheet, None)
         pre_sheet_resized = cv2.resize(pre_sheet[y0:y1, x0:x1], None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM)
-        cv2.imwrite(f"./dst/question_{question_index}.jpg", pre_sheet[y0:y1, x0:x1])
+        cv2.imwrite(info.OUTPUT_JPG_PAGE_PATH + f"question_{question_index}.jpg", pre_sheet[y0:y1, x0:x1])
         cv2.imshow(PREVIEW_WINDOW_NAME, pre_sheet_resized)
 
     if drag_flg:
@@ -75,7 +77,7 @@ def mouse_coor(event, x, y, flags, param):
 
 # 問題冊子読み込み
 page_index = 0
-files = glob.glob("./image/*.jpg")
+files = glob.glob(info.INPUT_JPG_PAGE_PATH)
 PAGE_MAX = len(files)
 sheet = cv2.imread(files[page_index], cv2.IMREAD_GRAYSCALE)
 
@@ -87,7 +89,6 @@ cv2.namedWindow(PREVIEW_WINDOW_NAME, cv2.WINDOW_NORMAL)
 cv2.setMouseCallback(WINDOW_NAME, mouse_coor)
 
 
-QUESTION_MAX = 80
 question_index = 1
 while True:
     logger.info("======================================================")
@@ -106,7 +107,7 @@ while True:
     cv2.imshow(WINDOW_NAME, cv2.resize(sheet, None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM))
 
     # 問題切り抜き表示
-    pre_sheet = cv2.imread(f"./dst/question_{question_index}.jpg", cv2.IMREAD_GRAYSCALE)
+    pre_sheet = cv2.imread(info.OUTPUT_JPG_PAGE_PATH + f"question_{question_index}.jpg", cv2.IMREAD_GRAYSCALE)
     if pre_sheet is not None:
         cv2.destroyWindow(PREVIEW_WINDOW_NAME)
         cv2.imshow(PREVIEW_WINDOW_NAME, cv2.resize(pre_sheet, None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM))
@@ -129,8 +130,8 @@ while True:
             question_index = 1
     elif(chr(key) == 'd'):
         question_index += 1
-        if question_index >= QUESTION_MAX:
-            question_index = QUESTION_MAX
+        if question_index >= info.QUESTION_NUM:
+            question_index = info.QUESTION_NUM
     elif(chr(key) == 'c'):
         break
 
