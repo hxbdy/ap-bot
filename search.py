@@ -64,7 +64,7 @@ def mouse_coor(event, x, y, flags, param):
 
         pre_sheet = cv2.copyTo(sheet, None)
         pre_sheet_resized = cv2.resize(pre_sheet[y0:y1, x0:x1], None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM)
-        cv2.imwrite(info.OUTPUT_JPG_PAGE_PATH + f"question_{question_index}.jpg", pre_sheet[y0:y1, x0:x1])
+        cv2.imwrite(info.OUTPUT_JPG_QUESTION_PATH + f"question_{question_index}.jpg", pre_sheet[y0:y1, x0:x1])
         cv2.imshow(PREVIEW_WINDOW_NAME, pre_sheet_resized)
 
     if drag_flg:
@@ -107,7 +107,7 @@ while True:
     cv2.imshow(WINDOW_NAME, cv2.resize(sheet, None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM))
 
     # 問題切り抜き表示
-    pre_sheet = cv2.imread(info.OUTPUT_JPG_PAGE_PATH + f"question_{question_index}.jpg", cv2.IMREAD_GRAYSCALE)
+    pre_sheet = cv2.imread(info.OUTPUT_JPG_QUESTION_PATH + f"question_{question_index}.jpg", cv2.IMREAD_GRAYSCALE)
     if pre_sheet is not None:
         cv2.destroyWindow(PREVIEW_WINDOW_NAME)
         cv2.imshow(PREVIEW_WINDOW_NAME, cv2.resize(pre_sheet, None, fx=PREVIEW_ZOOM, fy=PREVIEW_ZOOM))

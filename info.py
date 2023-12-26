@@ -1,5 +1,5 @@
 DB = "./main.db"
-EXAM_ID = "2023r05a_ap"
+EXAM_ID = "2023r05h_ap"
 
 # 問題数
 QUESTION_NUM = 80
@@ -14,8 +14,9 @@ COLUMNS = ["id", "answer", "category", "question_base64"]
 INPUT_PDF_PATH = f"./past_exam_question/{EXAM_ID}/question/pdf/{EXAM_ID}_am_qs.pdf"
 
 # ページ分割済みPDF問題の画像フォルダへのパス
-OUTPUT_JPG_PAGE_PATH = f"./past_exam_question/{EXAM_ID}/question/image/image_question/"
+OUTPUT_JPG_PAGE_PATH = f"./past_exam_question/{EXAM_ID}/question/image/image_page/"
 INPUT_JPG_PAGE_PATH = OUTPUT_JPG_PAGE_PATH + "*.jpg"
+OUTPUT_JPG_QUESTION_PATH = f"./past_exam_question/{EXAM_ID}/question/image/image_question/"
 
 # 問題画像をbase64にエンコードした文字列をcsv出力するパス
 OUTPUT_BASE64_PATH = f"./past_exam_question/{EXAM_ID}/question/csv/base64_question.csv"
