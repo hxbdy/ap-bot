@@ -3,7 +3,7 @@ import glob
 import info
 
 # base64エンコード結果をリストに用意する
-files = glob.glob(info.INPUT_JPG_PAGE_PATH)
+files = glob.glob(info.INPUT_JPG_QUESTION_PATH)
 b64_ary = []
 for img in files:
     with open(img,"rb") as imagefile:

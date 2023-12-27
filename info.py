@@ -9,6 +9,10 @@ TABLE_NAME = 'q' + EXAM_ID
 
 # 1つ目は主キー
 COLUMNS = ["id", "answer", "category", "question_base64"]
+ENUM_COLUMNS_ID              = 0
+ENUM_COLUMNS_ANSWER          = 1
+ENUM_COLUMNS_CATEGORY        = 2
+ENUM_COLUMNS_QUESTION_BASE64 = 3
 
 # jpgに変換する対象の問題pdfのパス
 INPUT_PDF_PATH = f"./past_exam_question/{EXAM_ID}/question/pdf/{EXAM_ID}_am_qs.pdf"
@@ -17,6 +21,7 @@ INPUT_PDF_PATH = f"./past_exam_question/{EXAM_ID}/question/pdf/{EXAM_ID}_am_qs.p
 OUTPUT_JPG_PAGE_PATH = f"./past_exam_question/{EXAM_ID}/question/image/image_page/"
 INPUT_JPG_PAGE_PATH = OUTPUT_JPG_PAGE_PATH + "*.jpg"
 OUTPUT_JPG_QUESTION_PATH = f"./past_exam_question/{EXAM_ID}/question/image/image_question/"
+INPUT_JPG_QUESTION_PATH = OUTPUT_JPG_QUESTION_PATH + "*.jpg"
 
 # 問題画像をbase64にエンコードした文字列をcsv出力するパス
 OUTPUT_BASE64_PATH = f"./past_exam_question/{EXAM_ID}/question/csv/base64_question.csv"
