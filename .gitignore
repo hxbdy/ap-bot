@@ -1,2 +1,4 @@
 past_exam_question/
 __pycache__/
+main.db
+private.py
