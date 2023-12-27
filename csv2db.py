@@ -2,11 +2,6 @@ import sqlite3
 import pandas as pd
 import info
 
-# id列用の文字列生成
-ids = []
-for i in range(1, info.QUESTION_NUM + 1):
-    ids.append(f"{i}")
-
 
 # 問題csv読み込み
 with open(info.OUTPUT_BASE64_PATH, encoding='utf8') as file:
@@ -20,7 +15,7 @@ with open(info.INPUT_QUESTION_CAT_CSV_PATH, encoding='utf8') as file:
 with open(info.INPUT_QUESTION_ANSWER_CSV_PATH, encoding='utf8') as file:
     answer = file.read().splitlines()
 
-row = list(zip(ids, answer, answer_cat, question_base64))
+row = list(zip(list(range(1, info.QUESTION_NUM + 1)), answer, answer_cat, question_base64))
 
 df = pd.DataFrame(columns=info.COLUMNS)
 
